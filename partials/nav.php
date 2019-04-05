@@ -10,7 +10,10 @@
         <!-- ici le boutton de déconnexion est un lien allant vers l'index qui envoie le paramètre "logout" via URL -->
         <p>
             <a class="d-block btn btn-danger mb-4 mt-2" href="index.php?logout">Déconnexion</a>
+            <!-- a verifier si c une bonne solution !-->
+            <?php if ($_SERVER['PHP_SELF'] != '/user_profile.php' ): ?>
             <a class="d-block btn btn-warning mb-4 mt-2" href="user_profile.php">Profile</a>
+            <?php endif; ?>
             <?php if ($_SESSION['user']['is_admin'] == 1): ?>
                 <a class="d-block btn btn-warning mb-4 mt-2" href="admin/index.php">Administration</a>
             <?php endif; ?>
