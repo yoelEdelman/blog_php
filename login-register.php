@@ -36,7 +36,7 @@ if(isset($_POST['login']) ) {
         else{
             $_SESSION['user']['first_name'] = $login_info['first_name'];
             $_SESSION['user']['is_admin'] = $login_info['is_admin'];
-            $_SESSION['user']['id'];
+            $_SESSION['user']['id'] = $login_info['id'];
             header('location:index.php');
             exit;
         }
