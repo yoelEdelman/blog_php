@@ -22,12 +22,20 @@ $articles = $query->fetchAll();
                 <section class="col-9">
                     <header class="pb-4 d-flex justify-content-between">
                         <h4>Liste des articles</h4>
-                        <a class="btn btn-primary" href="article-form.php">Ajouter un article</a>
+                        <a class="btn btn-primary" href="article_form.php">Ajouter un article</a>
                     </header>
                     <!-- si on a recu le parametre action en url-->
                     <?php if ( isset($_GET['action'])): ?>
                         <div class="bg-success text-white p-2 mb-4">Suppression efféctuée.</div>
                     <?php endif; ?>
+                    <?php if(isset($_SESSION['message'])) :?>
+                        <?php foreach($_SESSION['message'] as $message): ?>
+                            <div class="bg-success text-white p-2 mb-4">
+                                <?= $message; ?>
+                                <?php unset($_SESSION['message']) ;?>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif ;?>
                     <table class="table table-striped">
                         <thead>
                             <tr>
@@ -44,8 +52,8 @@ $articles = $query->fetchAll();
                                     <td><?= $article['title']; ?></td>
                                     <td><?= ($article['is_published'] == 0) ? 'non' : 'oui' ;?></td>
                                     <td>
-                                        <a href="article-form.php?article_id=<?= $article['id']; ?>&action=edit" class="btn btn-warning">Modifier</a>
-                                        <a onclick="return confirm('Are you sure?')" href="article-list.php?article_id=<?= $article['id']; ?>&action=delete" class="btn btn-danger">Supprimer</a>
+                                        <a href="article_form.php?article_id=<?= $article['id']; ?>&action=edit" class="btn btn-warning">Modifier</a>
+                                        <a onclick="return confirm('Are you sure?')" href="article_list.php?article_id=<?= $article['id']; ?>&action=delete" class="btn btn-danger">Supprimer</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>

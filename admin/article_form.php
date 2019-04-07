@@ -5,18 +5,7 @@ require_once '../_tools.php';
 $query = $db->query('SELECT * FROM category');
 $categories = $query->fetchAll();
 
-// on crée 2 tableu pour les messages messages en vert et warnings en rouge
-$messages = [];
 $warnings = [];
-
-// de base tous les les input ont la valeur null = vide ( pour eviter le message d'erreur undefined variable .... )
-$title = NULL;
-$category_id = NULL;
-$published_at = NULL;
-$summary = NULL;
-$content = NULL;
-$image = NULL;
-$is_published = NULL;
 
 // pour aficher les champs existant pour le update
 if (isset($_GET['article_id'])){
@@ -24,16 +13,7 @@ if (isset($_GET['article_id'])){
     $query_articles->execute([
             $_GET['article_id']
     ]);
-    $articles = $query_articles->fetch();
-
-    $title = $articles['title'];
-    $category_id = $articles['category_id'];
-    $published_at = $articles['published_at'];
-    $summary = $articles['summary'];
-    $content = $articles['content'];
-    $current_image = $articles['image'];
-    $is_published = $articles['is_published'];
-    $article_id = $articles['id'];
+    $article = $query_articles->fetch();
 }
 
 // si le formulaire insertion ou de mise a jour d'article a ete envoyer
@@ -63,38 +43,40 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
         if (empty($warnings)){
             // si $_POST['update'] existe il s'agit d'un nouvelle article donc on insert l'article en db
             if (isset($_POST['update'])){
-                // si $rename_img est vide on met pas a jour la photo et on garde l'ancienne
-                if (empty($rename_img)){
-                    $query = $db->prepare('UPDATE article 
-                        SET category_id = ?, published_at = ?, title = ?, summary = ?, content = ?, is_published = ? 
-                        WHERE id = ?');
-                    $query->execute([
-                        htmlspecialchars($_POST['categories']),
-                        htmlspecialchars($_POST['published_at']),
-                        htmlspecialchars(ucfirst($_POST['title'])),
-                        htmlspecialchars($_POST['summary']),
-                        htmlspecialchars($_POST['content']),
-                        htmlspecialchars($_POST['is_published']),
-                        $_POST['article_id']
-                    ]);
+                
+                //début de la chaîne de caractères de la requête de mise à jour
+                $query_string = 'UPDATE article SET category_id = :category_id, published_at = :published_at, title = :title, summary = :summary, content = :content, is_published = :is_published ';
+                //début du tableau de paramètres de la requête de mise à jour
+                $query_parameters = [
+                    'category_id' => htmlspecialchars($_POST['categories']),
+                    'published_at' => htmlspecialchars($_POST['published_at']),
+                    'title' => htmlspecialchars(ucfirst($_POST['title'])),
+                    'summary' => htmlspecialchars($_POST['summary']),
+                    'content' => htmlspecialchars($_POST['content']),
+                    'is_published' => htmlspecialchars($_POST['is_published']),
+                    'id' => $_POST['article_id']
+                ];
+
+                //uniquement si l'admin souhaite mettre a jour l'image
+                if( !empty($rename_img)) {
+                    //concaténation du champ image à mettre à jour
+                    $query_string .= ', image = :image ';
+                    //ajout du paramètre password à mettre à jour
+                    $query_parameters['image'] = htmlspecialchars($rename_img);
                 }
-                // sinon une nouvelle photo a ete inserer est on met a jour aussi l'image
-                else{
-                    $query = $db->prepare('UPDATE article 
-                        SET category_id = ?, published_at = ?, title = ?, summary = ?, content = ?, image = ?, is_published = ? 
-                        WHERE id = ?');
-                    $query->execute([
-                        htmlspecialchars($_POST['categories']),
-                        htmlspecialchars($_POST['published_at']),
-                        htmlspecialchars(ucfirst($_POST['title'])),
-                        htmlspecialchars($_POST['summary']),
-                        htmlspecialchars($_POST['content']),
-                        htmlspecialchars($rename_img),
-                        htmlspecialchars($_POST['is_published']),
-                        $_POST['article_id']
-                    ]);
+
+                //fin de la chaîne de caractères de la requête de mise à jour
+                $query_string .= 'WHERE id = :id';
+
+                //préparation et execution de la requête avec la chaîne de caractères et le tableau de données
+                $query = $db->prepare($query_string);
+                $result = $query->execute($query_parameters);
+
+                if($result){
+                    $_SESSION['message']['updated'] = 'Mise a jour efféctuée avec succes !';
+                    header('location:article_list.php');
+                    exit;
                 }
-                $messages['updated'] = 'Mise a jour efféctuée avec succes !';
             }
             // sinon il s'agit de $_POST['save'] donc on insert l'article en db
             else{
@@ -109,17 +91,19 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                     htmlspecialchars($rename_img),
                     htmlspecialchars($_POST['is_published'])
                 ]);
-                $messages['inserted'] = 'Insertion efféctuée avec succes !';
+                $_SESSION['message']['inserted'] = 'Insertion efféctuée avec succes !';
+                header('location:article_list.php');
+                exit;
             }
         }
     }
 // on enrengistre tout les input pour preremplir le formulaire pour pas que l'admin doit tout r'ecrire en cas d'erreur
-    $title = $_POST['title'];
-    $published_at = $_POST['published_at'];
-    $summary = $_POST['summary'];
-    $content = $_POST['content'];
+    $article['title'] = $_POST['title'];
+    $article['published_at'] = $_POST['published_at'];
+    $article['summary'] = $_POST['summary'];
+    $article['content'] = $_POST['content'];
     $image = $_FILES['image'];
-    $is_published = $_POST['is_published'];
+    $article['is_published'] = $_POST['is_published'];
 // pour plus tard
 //if (isset($_GET['article_id'])){
 //    $category_id = $_POST['categories'];
@@ -138,14 +122,8 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                     <!-- Si $article existe, on affiche "Modifier" SINON on affiche "Ajouter" -->
                     <h4><?= (isset($_GET['article_id'])) ? 'Modifier un article' : 'Ajouter un article' ;?></h4>
                 </header>
-                <!-- on verifie si les 2 tableaux ne sont pas vide pour afficher les massages a l'interieur d'une condition pour gagner en performance-->
-                <?php if (!empty($messages)): ?>
-                    <?php foreach($messages as $key => $message): ?>
-                        <div class="bg-success text-white p-2 mb-4">
-                            <?= $message; ?>
-                        </div>
-                    <?php endforeach; ?>
-                <?php elseif (!empty($warnings)): ?>
+                <!-- on verifie si le tableau $warnings n'est pas vide pour afficher les massages a l'interieur d'une condition pour gagner en performance-->
+                <?php if (!empty($warnings)): ?>
                     <?php foreach($warnings as $key => $warning): ?>
                         <div class="bg-danger text-white p-2 mb-4">
                             <?= $warning; ?>
@@ -170,32 +148,32 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                     <div class="tab-pane container-fluid active" id="infos" role="tabpanel">
                         <!-- Si $article existe, chaque champ du formulaire sera pré-remplit avec les informations de l'article -->
                         <?php if (isset($_GET['article_id'])): ?>
-                            <form action="article-form.php?article_id=<?= $article_id; ?>&action=edit" method="post" enctype="multipart/form-data">
+                            <form action="article_form.php?article_id=<?= $article['id']; ?>&action=edit" method="post" enctype="multipart/form-data">
                         <?php else: ?>
-                            <form action="article-form.php" method="post" enctype="multipart/form-data">
+                            <form action="article_form.php" method="post" enctype="multipart/form-data">
                         <?php endif; ?>
                             <div class="form-group">
                                 <label for="title">Titre : <b class="text-danger">*</b></label>
-                                <input class="form-control"  type="text" placeholder="Titre" name="title" id="title" value="<?= $title; ?>" />
+                                <input class="form-control"  type="text" placeholder="Titre" name="title" id="title" value="<?= isset($article) ? htmlentities($article['title']) : '';?>" />
                             </div>
                             <div class="form-group">
                                 <label for="published_at">Date de publication: <b class="text-danger">*</b></label>
-                                <input class="form-control"  type="date" name="published_at" id="published_at" value="<?= $published_at; ?>" />
+                                <input class="form-control"  type="date" name="published_at" id="published_at" value="<?= isset($article) ? htmlentities($article['published_at']) : '';?>" />
                             </div>
                             <div class="form-group">
                                 <label for="summary">Résumé :</label>
-                                <input class="form-control"  type="text" placeholder="Résumé" name="summary" id="summary" value="<?= $summary; ?>" />
+                                <input class="form-control"  type="text" placeholder="Résumé" name="summary" id="summary" value="<?= isset($article) ? htmlentities($article['summary']) : '';?>" />
                             </div>
                             <div class="form-group">
                                 <label for="content">Contenu :</label>
-                                <textarea class="form-control" name="content" id="content" placeholder="Contenu" ><?= $content; ?></textarea>
+                                <textarea class="form-control" name="content" id="content" placeholder="Contenu" ><?= isset($article) ? htmlentities($article['content']) : '';?></textarea>
                             </div>
                             <div class="form-group">
                                 <label for="image">Image :</label>
                                 <input class="form-control" type="file" name="image" id="image" value="<?= $image; ?>"/>
-                                <?php if (isset($_GET['article_id']) AND !empty($current_image)): ?>
-                                    <img class="img-fluid py-4" src="../assets/img/<?= $current_image; ?>" alt="" />
-                                    <input type="hidden" name="current-image" value="<?= $current_image; ?>" />
+                                <?php if (isset($_GET['article_id']) AND !empty($article['image'])): ?>
+                                    <img class="img-fluid py-4" src="../assets/img/<?= $article['image']; ?>" alt="" />
+                                    <input type="hidden" name="current-image" value="<?= $article['image'] ?>" />
                                 <?php endif;?>
                             </div>
                             <div class="form-group">
@@ -210,12 +188,12 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                                 <label for="is_published"> Publié ?</label>
                                 <select class="form-control" name="is_published" id="is_published">
                                     <?php if (isset($_GET['article_id'])): ?>
-                                            <?php if ($articles['is_published'] == 0): ?>
-                                                <option selected="selected" value="<?= $articles['is_published']; ?>">Non</option>
+                                            <?php if ($article['is_published'] == 0): ?>
+                                                <option selected="selected" value="<?= $article['is_published']; ?>">Non</option>
                                                 <option value="1">Oui</option>
                                             <?php else: ?>
                                                 <option value="0">Non</option>
-                                                <option selected="selected" value="<?= $articles['is_published']; ?>">Oui</option>
+                                                <option selected="selected" value="<?= $article['is_published']; ?>">Oui</option>
                                             <?php endif;?>
                                     <?php else: ?>
                                         <option selected="selected" value="0" >Non</option>
@@ -226,7 +204,7 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                             <!-- Si $article existe, on ajoute un champ caché contenant l'id de l'article à modifier pour la requête UPDATE -->
                             <?php if (isset($_GET['article_id'])): ?>
                                 <div class="form-group">
-                                    <input class="form-control" type="hidden" name="article_id" id="article_id" value="<?= $article_id; ?>"/>
+                                    <input class="form-control" type="hidden" name="article_id" id="article_id" value="<?= $article['id']; ?>"/>
                                 </div>
                             <?php endif;?>
                             <!-- Si $article existe, on affiche un lien de mise à jour -->
@@ -246,7 +224,7 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                     <?php if (isset($_GET['article_id'])): ?>
                         <div class="tab-pane container-fluid " id="images" role="tabpanel">
                             <h5 class="mt-4">Ajouter une image :</h5>
-                            <form action="article-form.php?article_id=8&action=edit" method="post" enctype="multipart/form-data">
+                            <form action="article_form.php?article_id=8&action=edit" method="post" enctype="multipart/form-data">
                                 <div class="form-group">
                                     <label for="caption">Légende :</label>
                                     <input class="form-control" type="text" placeholder="Légende" name="caption" id="caption" />

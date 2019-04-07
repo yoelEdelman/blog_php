@@ -138,7 +138,7 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                             <input class="form-control" type="file" name="image" id="image" value="<?= $image; ; ?>"/>
                             <?php if (isset($_GET['category_id']) AND !empty($category['image'])): ?>
                                 <img class="img-fluid py-4" src="../assets/img/<?= $category['image']; ?>" alt="" />
-                                <input type="hidden" name="current-image" value="<?= isset($category) ? htmlentities($category['image']) : '';?>" />
+                                <input type="hidden" name="current-image" value="<?= $category['image'];?>" />
                             <?php endif;?>
                         </div>
                         <!-- Si $category existe, on ajoute un champ caché contenant l'id de la catégorie à modifier pour la requête UPDATE -->
