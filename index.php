@@ -28,6 +28,14 @@ $homeArticles=$query->fetchAll();
         <div class="row my-3 index-content">
             <?php require 'partials/nav.php'; ?>
             <main class="col-9">
+                <?php if(isset($_SESSION['message'])) :?>
+                    <?php foreach($_SESSION['message'] as $message): ?>
+                        <div class="bg-success text-white p-2 mb-4">
+                            <?= $message; ?>
+                            <?php unset($_SESSION['message']) ;?>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif ;?>
                 <section class="latest_articles">
                     <header class="mb-4"><h1>Les 3 derniers articles :</h1></header>
                     <!-- les trois derniers articles -->
