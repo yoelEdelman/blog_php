@@ -1,17 +1,8 @@
 <?php
 require_once '_tools.php';
 
-// on crée 2 tableu pour les messages messages en vert et warnings en rouge
-$messages = [];
+// On declare un tableau warning pour stocker les eventuellescmessages d'erreur
 $warnings = [];
-
-// de base toutes les variables sonts null pour ne pas avoir de message undefined variable
-$first_name = NULL;
-$last_name = NULL;
-$mail = NULL;
-$password = NULL;
-$password_confirm = NULL;
-$biography = NULL;
 
 // si le formulaire de connexion a ete envoyer
 if(isset($_POST['login']) ) {
@@ -37,13 +28,12 @@ if(isset($_POST['login']) ) {
             $_SESSION['user']['first_name'] = $login_info['first_name'];
             $_SESSION['user']['is_admin'] = $login_info['is_admin'];
             $_SESSION['user']['id'] = $login_info['id'];
+            $_SESSION['message']['valid_login'] = 'Vous etes connecté ! ' . $_SESSION['first_name'];
+
             header('location:index.php');
             exit;
         }
     }
-// on stock les infos rempli dans le formulaire pour preremplire le form en cas d'erreur
-$mail = $_POST['email'];
-$password = $_POST['password'];
 }
 
 // si le formulaire inscription utilisateur a ete envoyer
@@ -71,26 +61,22 @@ if(isset($_POST['register'])) {
         // on insert en bdd
         $query_user = $db->prepare('INSERT INTO user (first_name, last_name, mail ,password, biography) VALUES (?, ?, ?, ?, ?)');
         $query_user->execute([
-                htmlspecialchars(ucfirst($_POST['first_name'])),
+            htmlspecialchars(ucfirst($_POST['first_name'])),
             htmlspecialchars(strtoupper($_POST['last_name'])),
             htmlspecialchars($_POST['email']),
             htmlspecialchars(md5($_POST['password'])),
             htmlspecialchars($_POST['bio'])
         ]);
-        $messages['inserted'] = 'Inscription efféctuée avec succes !';
+        $last_Inserted_user_Id = $db->lastInsertId();
+
         $_SESSION['user']['is_admin'] = 0; //PAS ADMIN !
         $_SESSION['user']['first_name'] = $_POST['first_name'];
-        $messages['valid_login'] = 'Vous etes connecté ! ' . $_SESSION['first_name'];
+        $_SESSION['user']['id'] = $last_Inserted_user_Id;
+        $_SESSION['message']['inserted'] = 'Inscription efféctuée avec succes !';
+
         header('location:index.php');
         exit;
     }
-// on stock les infos rempli dans le formulaire pour preremplire le form en cas d'erreur
-$first_name = $_POST['first_name'];
-$last_name = $_POST['last_name'];
-$mail = $_POST['email'];
-$password = $_POST['password'];
-$password_confirm = $_POST['password_confirm'];
-$biography = $_POST['bio'];
 }
 ?>
 <?php $title = 'Login - Mon premier blog !'; ?>
@@ -102,14 +88,8 @@ $biography = $_POST['bio'];
             <div class="row my-3 article-content">
                 <?php require('partials/nav.php'); ?>
                 <main class="col-9">
-                    <!-- on verifie si les 2 tableaux ne sont pas vide pour afficher les massages a l'interieur d'une condition pour gagner en performance-->
+                    <!-- on verifie si le tableau $warnings n'est pas vide pour afficher les massages a l'interieur d'une condition pour gagner en performance-->
                     <?php if (!empty($messages)): ?>
-                        <?php foreach($messages as $key => $message): ?>
-                            <div class="bg-success text-white p-2 mb-4">
-                                <?= $message; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php elseif (!empty($warnings)): ?>
                         <?php foreach($warnings as $key => $warning): ?>
                             <div class="bg-danger text-white p-2 mb-4">
                                 <?= $warning; ?>
@@ -127,15 +107,15 @@ $biography = $_POST['bio'];
                     </ul>
                     <div class="tab-content">
                         <div class="tab-pane container-fluid <?php if (!isset($_POST['register'])): ?>active<?php endif; ?>" id="login" role="tabpanel">
-                            <form action="login-register.php" method="post" class="p-4 row flex-column">
+                            <form action="login_register.php" method="post" class="p-4 row flex-column">
                                 <h4 class="pb-4 col-sm-8 offset-sm-2">Connexion</h4>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="email">Email <b class="text-danger">*</b></label>
-                                    <input class="form-control" value="<?= $mail ; ?>" type="email" placeholder="Email" name="email" id="email" />
+                                    <input class="form-control" value="<?= !empty($warnings) ? $_POST['email'] : '' ?>" type="email" placeholder="Email" name="email" id="email" />
                                 </div>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="password">Mot de passe <b class="text-danger">*</b></label>
-                                    <input class="form-control" value="<?= $password ; ?>" type="password" placeholder="Mot de passe" name="password" id="password" />
+                                    <input class="form-control" value="" type="password" placeholder="Mot de passe" name="password" id="password" />
                                 </div>
                                 <div class="text-right col-sm-8 offset-sm-2">
                                     <p class="text-danger">* champs requis</p>
@@ -144,31 +124,31 @@ $biography = $_POST['bio'];
                             </form>
                         </div>
                         <div class="tab-pane container-fluid <?php if (isset($_POST['register'])): ?>active<?php endif; ?>" id="register" role="tabpanel">
-                            <form action="login-register.php" method="post" class="p-4 row flex-column">
+                            <form action="login_register.php" method="post" class="p-4 row flex-column">
                                 <h4 class="pb-4 col-sm-8 offset-sm-2">Inscription</h4>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="first_name">Prénom <b class="text-danger">*</b></label>
-                                    <input class="form-control" value="<?= $first_name; ?>" type="text" placeholder="Prénom" name="first_name" id="first_name" />
+                                    <input class="form-control" value="<?= !empty($warnings) ? $_POST['last_name'] : '' ?>" type="text" placeholder="Prénom" name="first_name" id="first_name" />
                                 </div>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="last_name">Nom de famille</label>
-                                    <input class="form-control" value="<?= $last_name; ?>" type="text" placeholder="Nom de famille" name="last_name" id="last_name" />
+                                    <input class="form-control" value="<?= !empty($warnings) ? $_POST['last_name'] : '' ?>" type="text" placeholder="Nom de famille" name="last_name" id="last_name" />
                                 </div>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="email">Email <b class="text-danger">*</b></label>
-                                    <input class="form-control" value="<?= $mail; ?>" type="email" placeholder="Email" name="email" id="email" />
+                                    <input class="form-control" value="<?= !empty($warnings) ? $_POST['email'] : '' ?>" type="email" placeholder="Email" name="email" id="email" />
                                 </div>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="password">Mot de passe <b class="text-danger">*</b></label>
-                                    <input class="form-control" value="<?= $password; ?>" type="password" placeholder="Mot de passe" name="password" id="password" />
+                                    <input class="form-control" value="" type="password" placeholder="Mot de passe" name="password" id="password" />
                                 </div>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="password_confirm">Confirmation du mot de passe <b class="text-danger">*</b></label>
-                                    <input class="form-control" value="<?= $password_confirm; ?>" type="password" placeholder="Confirmation du mot de passe" name="password_confirm" id="password_confirm" />
+                                    <input class="form-control" value="" type="password" placeholder="Confirmation du mot de passe" name="password_confirm" id="password_confirm" />
                                 </div>
                                 <div class="form-group col-sm-8 offset-sm-2">
                                     <label for="bio">biography</label>
-                                    <textarea class="form-control" name="bio" id="bio" placeholder="Ta vie Ton oeuvre..."><?= $biography; ?></textarea>
+                                    <textarea class="form-control" name="bio" id="bio" placeholder="Ta vie Ton oeuvre..."><?= !empty($warnings) ? $_POST['bio'] : '' ?></textarea>
                                 </div>
                                 <div class="text-right col-sm-8 offset-sm-2">
                                     <p class="text-danger">* champs requis</p>

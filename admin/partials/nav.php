@@ -13,8 +13,8 @@ $articles_quantity = $query->fetch();
     <a class="d-block btn btn-danger mb-4 mt-2" href="../index.php?logout">Déconnexion</a>
     <a class="d-block btn btn-warning mb-4 mt-2" href="../index.php">Site</a>
     <ul>
-        <li><a href="user-list.php">Gestion des utilisateurs (<?= $users_quantity[0]; ?>)</a></li>
-        <li><a href="category-list.php">Gestion des catégories (<?= $categories_quantity[0]; ?>)</a></li>
+        <li><a href="user_list.php">Gestion des utilisateurs (<?= $users_quantity[0]; ?>)</a></li>
+        <li><a href="category_list.php">Gestion des catégories (<?= $categories_quantity[0]; ?>)</a></li>
         <li><a href="article-list.php">Gestion des articles (<?= $articles_quantity[0]; ?>)</a></li>
     </ul>
 </nav>

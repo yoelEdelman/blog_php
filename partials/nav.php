@@ -10,7 +10,7 @@
         <!-- ici le boutton de déconnexion est un lien allant vers l'index qui envoie le paramètre "logout" via URL -->
         <p>
             <a class="d-block btn btn-danger mb-4 mt-2" href="index.php?logout">Déconnexion</a>
-            <!-- a verifier si c une bonne solution !-->
+            <!-- pour ne pas afficher le bouton profile quand on est sur la page user_profile !-->
             <?php if ($_SERVER['SCRIPT_FILENAME'] != $_SERVER['DOCUMENT_ROOT'].='/user_profile.php' ): ?>
             <a class="d-block btn btn-warning mb-4 mt-2" href="user_profile.php">Profile</a>
             <?php endif; ?>
@@ -20,7 +20,7 @@
         </p>
     <!-- Sinon afficher un boutton de connexion -->
     <?php else: ?>
-        <a class="d-block btn btn-primary mb-4 mt-2" href="login-register.php">Connexion / inscription</a>
+        <a class="d-block btn btn-primary mb-4 mt-2" href="login_register.php">Connexion / inscription</a>
     <?php endif; ?>
 	<b>Catégories :</b>
 	<ul>
