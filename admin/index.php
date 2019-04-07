@@ -1,4 +1,11 @@
-<?php require_once '../_tools.php'; ?>
+<?php require_once '../_tools.php';
+
+if(!isset($_SESSION['user']) OR $_SESSION['user']['is_admin'] == 0){
+    header('location:../index.php');
+    exit;
+}
+
+?>
 <?php $title = 'Administration - Mon premier blog !'; ?>
 <?php ob_start(); ?>
 <body class="index-body">

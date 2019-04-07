@@ -1,6 +1,11 @@
 <?php
 require_once '../_tools.php';
 
+if(!isset($_SESSION['user']) OR $_SESSION['user']['is_admin'] == 0){
+    header('location:../index.php');
+    exit;
+}
+
 // si user_id est existe on delete tout de la table user ou id est egale a l'id recu en get
 if (isset($_GET['user_id'])){
     $query = $db->prepare('DELETE FROM user WHERE id = ?');

@@ -1,6 +1,11 @@
 <?php
 require_once '../_tools.php';
 
+if(!isset($_SESSION['user']) OR $_SESSION['user']['is_admin'] == 0){
+    header('location:../index.php');
+    exit;
+}
+
 // si le param category_is existe on suprime tout de la table category la ou id est egale a l'id recu en get
 if (isset($_GET['category_id'])){
     $query = $db->prepare('DELETE FROM category WHERE id = ?');

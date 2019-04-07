@@ -1,6 +1,11 @@
 <?php
 require_once '../_tools.php';
 
+if(!isset($_SESSION['user']) OR $_SESSION['user']['is_admin'] == 0){
+    header('location:../index.php');
+    exit;
+}
+
 // si le param article_id existe en url on suprime tout de la table article la ou id est egale a l'id recu en get
 if (isset($_GET['article_id'])){
     $query = $db->prepare('DELETE FROM article WHERE id = ?');
