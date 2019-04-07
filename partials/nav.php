@@ -11,8 +11,8 @@
         <p>
             <a class="d-block btn btn-danger mb-4 mt-2" href="index.php?logout">Déconnexion</a>
             <!-- a verifier si c une bonne solution !-->
-            <?php if ($_SERVER['PHP_SELF'] != '/user_profile.php' ): ?>
-            <a class="d-block btn btn-warning mb-4 mt-2" href="user_profile.php?user_id=<?= $_SESSION['user']['id']; ?>">Profile</a>
+            <?php if ($_SERVER['SCRIPT_FILENAME'] != $_SERVER['DOCUMENT_ROOT'].='/user_profile.php' ): ?>
+            <a class="d-block btn btn-warning mb-4 mt-2" href="user_profile.php">Profile</a>
             <?php endif; ?>
             <?php if ($_SESSION['user']['is_admin'] == 1): ?>
                 <a class="d-block btn btn-warning mb-4 mt-2" href="admin/index.php">Administration</a>
