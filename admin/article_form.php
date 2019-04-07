@@ -183,7 +183,7 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                             </div>
                             <div class="form-group">
                                 <label for="categories"> Catégorie <b class="text-danger">*</b></label>
-                                <select class="form-control" name="categories" id="categories" multiple="multiple">
+                                <select multiple class="form-control" name="categories[]" id="categories" multiple="multiple">
                                     <?php foreach($categories as $key => $category): ?>
                                             <option value="<?= $category['id']; ?>" ><?= $category['name']; ?></option>
                                     <?php endforeach; ?>
