@@ -28,32 +28,42 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
         $warnings['empty'] = 'Tous les chams sont obligatoire !';
     }
     else{
-        // si files existe et qu'il retourne l'erreur 0 ( qu'il a bien ete uploaded )
         if (isset($_FILES['image']) AND ($_FILES['image']['error'] === 0)) {
-            // si le fichiers est diferent de type image
-            if(pathinfo($_FILES['image']['type'])['dirname'] != 'image'){
+
+            $allowed_extensions = ['jpg', 'jpeg', 'gif', 'png'];
+
+            $my_file_extension = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+
+            if(!$my_file_extension){
                 $warnings['type'] = "Le type de fichier n'est pas conforme !";
             }
-            //si le fichier est trop lourd
             elseif ($_FILES['image']['size'] > 1500000){
                 $warnings['size'] = 'Votre fichier est trop lourd !';
             }
             else{
-                // on re'nome le fichier et on insert le le nouveau nom dans le dossier img
-                $rename_img = time() . $_FILES['image']['name'];
-                move_uploaded_file($_FILES['image']['tmp_name'], '../assets/img/' . basename($rename_img));
+                do{
+                    $new_file_name = rand().time() . $_FILES['image']['name'];
+                    $destination = '../assets/img/' . $new_file_name;
+                }while(file_exists($destination));
+
+                $result = move_uploaded_file($_FILES['image']['tmp_name'], $destination);
             }
         }
+
         // si le tableau $warnings est vide ( qu'il ny a aucune erreur )
         if (empty($warnings)){
             // si $_POST['update'] existe il s'agit d'un nouvelle article donc on insert l'article en db
             if (isset($_POST['update'])){
+
+                $query = $db->prepare('DELETE FROM articles_categories WHERE article_id = :article_id');
+                $query->execute([
+                    'article_id' => $_POST['article_id']
+                ]);
                 
                 //début de la chaîne de caractères de la requête de mise à jour
-                $query_string = 'UPDATE article SET category_id = :category_id, published_at = :published_at, title = :title, summary = :summary, content = :content, is_published = :is_published ';
+                $query_string = 'UPDATE article SET published_at = :published_at, title = :title, summary = :summary, content = :content, is_published = :is_published ';
                 //début du tableau de paramètres de la requête de mise à jour
                 $query_parameters = [
-                    'category_id' => htmlspecialchars($_POST['categories']),
                     'published_at' => htmlspecialchars($_POST['published_at']),
                     'title' => htmlspecialchars(ucfirst($_POST['title'])),
                     'summary' => htmlspecialchars($_POST['summary']),
@@ -63,11 +73,12 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                 ];
 
                 //uniquement si l'admin souhaite mettre a jour l'image
-                if( !empty($rename_img)) {
+                if( isset($result) AND !empty($result)) {
                     //concaténation du champ image à mettre à jour
                     $query_string .= ', image = :image ';
                     //ajout du paramètre password à mettre à jour
-                    $query_parameters['image'] = htmlspecialchars($rename_img);
+                    $query_parameters['image'] = htmlspecialchars($new_file_name);
+                    unlink('../assets/img/'.$article['image']);
                 }
 
                 //fin de la chaîne de caractères de la requête de mise à jour
@@ -77,6 +88,15 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                 $query = $db->prepare($query_string);
                 $result = $query->execute($query_parameters);
 
+                $query = $db->prepare('INSERT INTO articles_categories (article_id, category_id)
+                  VALUES (:article_id, :category_id)');
+                foreach ($_POST['categories'] as $category){
+                    $query->execute([
+                        'article_id' => $_POST['article_id'],
+                        'category_id' => htmlspecialchars($category)
+                    ]);
+                }
+
                 if($result){
                     $_SESSION['message']['updated'] = 'Mise a jour efféctuée avec succes !';
                     header('location:article_list.php');
@@ -85,20 +105,49 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
             }
             // sinon il s'agit de $_POST['save'] donc on insert l'article en db
             else{
-                $query = $db->prepare('INSERT INTO article (category_id, published_at, title, summary, content, image, is_published) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?)');
-                $query->execute([
-                    htmlspecialchars($_POST['categories']),
-                    htmlspecialchars($_POST['published_at']),
-                    htmlspecialchars(ucfirst($_POST['title'])),
-                    htmlspecialchars($_POST['summary']),
-                    htmlspecialchars($_POST['content']),
-                    htmlspecialchars($rename_img),
-                    htmlspecialchars($_POST['is_published'])
-                ]);
-                $_SESSION['message']['inserted'] = 'Insertion efféctuée avec succes !';
-                header('location:article_list.php');
-                exit;
+                $query_string = 'INSERT INTO article (published_at, title, summary, content, is_published ';
+                $query_values = 'VALUES (:published_at, :title, :summary, :content, :is_published';
+                $query_parameters = [
+                    'published_at' => htmlspecialchars($_POST['published_at']),
+                    'title' => htmlspecialchars(ucfirst($_POST['title'])),
+                    'summary' => htmlspecialchars($_POST['summary']),
+                    'content' => htmlspecialchars($_POST['content']),
+                    'is_published' => htmlspecialchars($_POST['is_published'])
+                ];
+
+                //uniquement si l'admin souhaite ajouter une image
+                if( isset($result) AND !empty($result)) {
+                    //concaténation du champ image à ajouter
+                    $query_string .= ', image ';
+                    $query_values .= ', :image';
+                    $query_parameters['image'] = htmlspecialchars($new_file_name);
+                }
+
+                $query_string .= ') ';
+                $query_values .= ')';
+
+                $query_string .= $query_values;
+
+                //préparation et execution de la requête avec la chaîne de caractères et le tableau de données
+                $query = $db->prepare($query_string);
+                $result = $query->execute($query_parameters);
+
+                $last_insert = $db -> lastInsertId();
+
+                $query = $db->prepare('INSERT INTO articles_categories (article_id, category_id)
+                  VALUES (:article_id, :category_id)');
+                foreach ($_POST['categories'] as $category){
+                    $query->execute([
+                        'article_id' => $last_insert,
+                        'category_id' => htmlspecialchars($category)
+                    ]);
+                }
+
+                if($result){
+                    $_SESSION['message']['inserted'] = 'Insertion efféctuée avec succes !';
+                    header('location:article_list.php');
+                    exit;
+                }
             }
         }
     }
@@ -111,7 +160,7 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
     $article['is_published'] = $_POST['is_published'];
 // pour plus tard
 //if (isset($_GET['article_id'])){
-//    $category_id = $_POST['categories'];
+//    $category['id'] = $_POST['categories'];
 //}
 }
 ?>
@@ -185,7 +234,15 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                                 <label for="categories"> Catégorie <b class="text-danger">*</b></label>
                                 <select multiple class="form-control" name="categories[]" id="categories" multiple="multiple">
                                     <?php foreach($categories as $key => $category): ?>
-                                            <option value="<?= $category['id']; ?>" ><?= $category['name']; ?></option>
+                                        <?php
+                                        $query = $db->prepare('SELECT * FROM articles_categories WHERE article_id = ? AND category_id = ?');
+                                        $query->execute([
+                                            $_GET['article_id'],
+                                            $category['id']
+                                        ]);
+                                        $selected = $query->fetch();
+                                        ?>
+                                        <option value="<?= $category['id'];?>" <?= (isset($_GET['article_id']) AND !empty($selected)) ? "selected" : "" ; ?>><?= $category['name']; ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
