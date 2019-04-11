@@ -13,10 +13,17 @@ if (isset($_GET['logout']) AND isset($_SESSION['user'])){
 }
 
 // on recupere les infos des tables article et category avec jointure pour les aficher
-$query = $db->query('SELECT title, name, published_at, summary, article.id, article.image 
-    FROM category INNER JOIN article 
-    ON category.id = article.category_id 
+$query = $db->query('SELECT title, GROUP_CONCAT(name), published_at, summary, article.id, article.image 
+    FROM article INNER JOIN articles_categories
+    ON article.id = articles_categories.article_id
+    
+    
+    INNER JOIN category 
+    ON articles_categories.category_id = category.id
+    
+    
     WHERE published_at <= NOW() AND is_published = 1 
+    GROUP BY article.id DESC
     ORDER BY published_at DESC LIMIT 3');
 $homeArticles=$query->fetchAll();
 ?>
@@ -49,7 +56,7 @@ $homeArticles=$query->fetchAll();
                                 </div>
                             <?php endif; ?>
                             <div class="col-12 col-md-8 col-lg-9">
-                                <b class="article-category">[<?= $article['name']; ?>]</b>
+                                <b class="article-category">[<?= $article['GROUP_CONCAT(name)']; ?>]</b>
                                 <span class="article-date">
                                     <!-- affichage de la date de l'article selon le format %A %e %B %Y -->
                                     <?= strftime("%A %e %B %Y", strtotime($article['published_at'])); ?>
