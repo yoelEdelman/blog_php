@@ -8,6 +8,10 @@ if(!isset($_SESSION['user']) OR $_SESSION['user']['is_admin'] == 0){
 
 // si le param article_id existe en url on suprime tout de la table article la ou id est egale a l'id recu en get
 if (isset($_GET['article_id'])){
+    $query = $db->prepare('DELETE FROM articles_categories WHERE article_id = ?');
+    $result = $query->execute([
+        $_GET['article_id']
+    ]);
     $query = $db->prepare('DELETE FROM article WHERE id = ?');
     $result = $query->execute([
             $_GET['article_id']
@@ -31,15 +35,16 @@ $articles = $query->fetchAll();
                     </header>
                     <!-- si on a recu le parametre action en url-->
                     <?php if ( isset($_GET['action'])): ?>
-                        <div class="bg-success text-white p-2 mb-4">Suppression efféctuée.</div>
+                        <?php $_SESSION['message']['deleted'] = 'Suppression efféctuée.' ;?>
                     <?php endif; ?>
                     <?php if(isset($_SESSION['message'])) :?>
                         <?php foreach($_SESSION['message'] as $message): ?>
                             <div class="bg-success text-white p-2 mb-4">
                                 <?= $message; ?>
-                                <?php unset($_SESSION['message']) ;?>
+<!--                                --><?php //unset($message) ;?>
                             </div>
                         <?php endforeach; ?>
+                        <?php unset($_SESSION['message']) ;?>
                     <?php endif ;?>
                     <table class="table table-striped">
                         <thead>
