@@ -24,20 +24,25 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
         $warnings['empty'] = 'Tous les chams sont obligatoire !';
     }
     else{
-        // si files existe et qu'il retourne l'erreur 0 ( qu'il a bien ete uploaded )
         if (isset($_FILES['image']) AND ($_FILES['image']['error'] === 0)) {
-            // si le fichiers est diferent de type image
-            if(pathinfo($_FILES['image']['type'])['dirname'] != 'image'){
+
+            $allowed_extensions = ['jpg', 'jpeg', 'gif', 'png'];
+
+            $my_file_extension = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+
+            if(!$my_file_extension){
                 $warnings['type'] = "Le type de fichier n'est pas conforme !";
             }
-            //si le fichier est trop lourd
             elseif ($_FILES['image']['size'] > 1500000){
                 $warnings['size'] = 'Votre fichier est trop lourd !';
             }
             else{
-                // on re'nome le fichier et on insert le le nouveau nom dans le dossier img
-                $rename_img = time() . $_FILES['image']['name'];
-                move_uploaded_file($_FILES['image']['tmp_name'], '../assets/img/' . basename($rename_img));
+                do{
+                    $new_file_name = rand().time() . $_FILES['image']['name'];
+                    $destination = '../assets/img/' . $new_file_name;
+                }while(file_exists($destination));
+
+                $result = move_uploaded_file($_FILES['image']['tmp_name'], $destination);
             }
         }
         // si le tableau messages est vide ( qu'il ny a aucune erreur )
@@ -55,11 +60,11 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                 ];
 
                 //uniquement si l'admin souhaite mettre a jour l'image
-                if( !empty($rename_img)) {
+                if( !empty(isset($result) AND !empty($result))) {
                     //concaténation du champ image à mettre à jour
                     $query_string .= ', image = :image ';
                     //ajout du paramètre password à mettre à jour
-                    $query_parameters['image'] = htmlspecialchars($rename_img);
+                    $query_parameters['image'] = htmlspecialchars($new_file_name);
                 }
 
                 //fin de la chaîne de caractères de la requête de mise à jour
@@ -90,7 +95,7 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
                     $query->execute([
                         htmlspecialchars(ucfirst($_POST['name'])),
                         htmlspecialchars($_POST['description']),
-                        htmlspecialchars($rename_img)]);
+                        htmlspecialchars($new_file_name)]);
                     $_SESSION['message']['inserted'] = 'Insertion efectue avec succes !';
                     header('location:category_list.php');
                     exit;
