@@ -57,6 +57,7 @@ if(isset($_POST['update'])) {
         }
         //si enregistrement ok
         if(isset($result) AND $result){
+            $_SESSION['user']['first_name'] = $_POST['first_name'];
             $_SESSION['message']['updated'] = 'Mise a jour efféctuée avec succes !';
             header('location:index.php');
             exit;
