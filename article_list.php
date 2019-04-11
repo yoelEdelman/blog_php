@@ -4,9 +4,10 @@ require_once '_tools.php';
 //si une catégorie est demandée
 if (isset($_GET['category_id'])) {
 	//selection des articles de la catégorie demandée
-    $query_articles = $db->prepare('SELECT * 
-        FROM article 
-        WHERE published_at <= NOW() AND category_id = ? AND is_published = 1 
+    $query_articles = $db->prepare('SELECT article.*, articles_categories.category_id
+        FROM article INNER JOIN articles_categories
+        ON article.id = articles_categories.article_id
+        WHERE published_at <= NOW() AND articles_categories.category_id = ? AND is_published = 1 
         ORDER BY published_at DESC');
 	$query_articles->execute([
 	        $_GET['category_id']
@@ -28,10 +29,13 @@ if (isset($_GET['category_id'])) {
 }
 else {
 	//si pas decatégorie demandée j'affiche tous les articles
-	$query_articles = $db->query('SELECT title, name, published_at, summary, article.id, article.image 
-        FROM category INNER JOIN article 
-        ON category.id = category_id 
+	$query_articles = $db->query('SELECT title, GROUP_CONCAT(name), published_at, summary, article.id, article.image 
+        FROM article JOIN articles_categories
+        ON article.id = articles_categories.article_id
+        JOIN category 
+        ON articles_categories.category_id = category.id
         WHERE published_at <= NOW() AND is_published = 1 
+        GROUP BY article.id
         ORDER BY published_at DESC');
 }
 //puis je récupère les données selon la requête générée avant
@@ -68,7 +72,7 @@ $articles = $query_articles->fetchAll();
                                     <?php endif; ?>
                                     <div class="col-12 col-md-8 col-lg-9">
                                         <?php if( !isset($_GET['category_id'])): ?>
-                                            <b class="article-category">[<?= $article['name']; ?>]</b>
+                                            <b class="article-category">[<?= $article['GROUP_CONCAT(name)']; ?>]</b>
                                         <?php endif; ?>
                                         <span class="article-date">
                                             <!-- affichage de la date de l'article selon le format %A %e %B %Y -->
