@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost:8889
--- Généré le :  Dim 14 avr. 2019 à 20:21
+-- Généré le :  Dim 14 avr. 2019 à 20:36
 -- Version du serveur :  5.7.23
 -- Version de PHP :  7.2.10
 
