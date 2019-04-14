@@ -3,7 +3,7 @@ require_once '_tools.php';
 
 //si j'ai reçu article_id ET que c'est un nombre
 if(isset($_GET['article_id']) AND ctype_digit($_GET['article_id'])){
-    $query = $db->prepare('SELECT a.*, c.name as category_name 
+    $query = $db->prepare('SELECT a.*, GROUP_CONCAT(c.name) as category_name 
         FROM article a INNER JOIN articles_categories a_c
         ON a.id = a_c.article_id
         INNER JOIN category c
