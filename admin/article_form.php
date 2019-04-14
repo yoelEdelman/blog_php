@@ -34,7 +34,7 @@ if(isset($_POST['save']) OR isset($_POST['update'])) {
 
             $my_file_extension = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
 
-            if(!$my_file_extension){
+            if(!in_array($my_file_extension , $allowed_extensions)){
                 $warnings['type'] = "Le type de fichier n'est pas conforme !";
             }
             elseif ($_FILES['image']['size'] > 1500000){
